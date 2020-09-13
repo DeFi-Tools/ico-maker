@@ -20,7 +20,7 @@ npm install ico-maker
 [BaseCrowdsale](https://github.com/vittominacori/ico-maker/blob/master/contracts/crowdsale/BaseCrowdsale.sol) is an extensible Crowdsale contract with Timed and Capped behaviours.
 
 ```solidity
-pragma solidity ^0.6.0;
+pragma solidity ^0.7.0;
 
 import "ico-maker/contracts/crowdsale/BaseCrowdsale.sol";
 
@@ -29,8 +29,7 @@ contract MyCrowdsale is BaseCrowdsale {
         uint256 rate,
         address payable wallet,
         IERC20 token
-    )
-    public BaseCrowdsale(rate, wallet, token) {}
+    ) BaseCrowdsale(rate, wallet, token) {}
 }
 ```
 
