@@ -1,7 +1,7 @@
 # ICO Maker
 
 [![NPM Package](https://img.shields.io/npm/v/ico-maker.svg?style=flat-square)](https://www.npmjs.org/package/ico-maker)
-[![Build Status](https://travis-ci.org/vittominacori/ico-maker.svg?branch=master)](https://travis-ci.org/vittominacori/ico-maker)
+[![Build Status](https://travis-ci.com/vittominacori/ico-maker.svg?branch=master)](https://travis-ci.com/vittominacori/ico-maker)
 [![Coverage Status](https://coveralls.io/repos/github/vittominacori/ico-maker/badge.svg?branch=master)](https://coveralls.io/github/vittominacori/ico-maker?branch=master)
 [![MIT licensed](https://img.shields.io/github/license/vittominacori/ico-maker.svg)](https://github.com/vittominacori/ico-maker/blob/master/LICENSE)
 
