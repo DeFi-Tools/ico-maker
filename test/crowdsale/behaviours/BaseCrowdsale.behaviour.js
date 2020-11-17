@@ -1,209 +1,86 @@
-const { BN, expectRevert, time } = require('@openzeppelin/test-helpers');
+const { BN, ether, expectRevert } = require('@openzeppelin/test-helpers');
 
+const { expect } = require('chai');
+
+const { shouldBehaveLikeCrowdsale } = require('./Crowdsale.behaviour');
 const { shouldBehaveLikeTokenRecover } = require('eth-token-recover/test/TokenRecover.behaviour');
-const { shouldBehaveLikeTimedCrowdsale } = require('./TimedCrowdsale.behaviour');
-const { shouldBehaveLikeCappedCrowdsale } = require('./CappedCrowdsale.behaviour');
 
-function shouldBehaveLikeBaseCrowdsale ([owner, investor, wallet, purchaser, thirdParty], rate, minimumContribution) {
-  const value = minimumContribution;
+function shouldBehaveLikeBaseCrowdsale (
+  [owner, investor, wallet, purchaser, thirdParty],
+  { rate },
+) {
+  const value = ether('1');
 
-  context('like a TimedCrowdsale', function () {
-    shouldBehaveLikeTimedCrowdsale([owner, investor, wallet, purchaser], rate, value);
+  context('like a Crowdsale', async function () {
+    shouldBehaveLikeCrowdsale(
+      [owner, investor, wallet, purchaser, thirdParty],
+      { rate },
+    );
   });
 
-  context('like a CappedCrowdsale', function () {
-    beforeEach(async function () {
-      await time.increaseTo(this.openingTime);
-    });
-    shouldBehaveLikeCappedCrowdsale([investor, purchaser]);
-  });
-
-  context('like a BaseCrowdsale', function () {
-    describe('extending closing time', function () {
-      context('before crowdsale start', function () {
-        beforeEach(async function () {
-          (await this.crowdsale.isOpen()).should.equal(false);
-          await expectRevert.unspecified(this.crowdsale.send(value));
-        });
-
-        describe('if another account is calling', function () {
-          it('it reverts', async function () {
-            const newClosingTime = this.closingTime.add(time.duration.days(1));
-            await expectRevert.unspecified(this.crowdsale.extendTime(newClosingTime, { from: thirdParty }));
-          });
-        });
+  context('like a BaseCrowdsale', async function () {
+    describe('checking properties', function () {
+      it('investorsNumber should be zero', async function () {
+        expect(await this.crowdsale.investorsNumber()).to.be.bignumber.equal(new BN(0));
       });
 
-      context('after crowdsale start', function () {
-        beforeEach(async function () {
-          await time.increaseTo(this.openingTime);
-          (await this.crowdsale.isOpen()).should.equal(true);
-          await this.crowdsale.send(value);
-        });
-
-        describe('if another account is calling', function () {
-          it('it reverts', async function () {
-            const newClosingTime = this.closingTime.add(time.duration.days(1));
-            await expectRevert.unspecified(this.crowdsale.extendTime(newClosingTime, { from: thirdParty }));
-          });
-        });
-      });
-    });
-
-    describe('high-level purchase', function () {
-      beforeEach(async function () {
-        await time.increaseTo(this.openingTime);
+      it('investorExists should be false', async function () {
+        expect(await this.crowdsale.investorExists(investor)).to.be.equal(false);
       });
 
-      it('should add beneficiary to contributions list', async function () {
-        let contributorsLength = await this.contributions.getContributorsLength();
-        assert.equal(contributorsLength, 0);
-
-        const preTokenBalance = await this.contributions.tokenBalance(investor);
-        preTokenBalance.should.be.bignumber.equal(new BN(0));
-        const preWeiContribution = await this.contributions.weiContribution(investor);
-        preWeiContribution.should.be.bignumber.equal(new BN(0));
-
-        await this.crowdsale.sendTransaction({ value: value, from: investor });
-
-        const postOneTokenBalance = await this.contributions.tokenBalance(investor);
-        postOneTokenBalance.should.be.bignumber.equal(value.mul(rate));
-        const postOneWeiContribution = await this.contributions.weiContribution(investor);
-        postOneWeiContribution.should.be.bignumber.equal(value);
-
-        await this.crowdsale.sendTransaction({ value: value, from: investor });
-
-        const postTwoTokenBalance = await this.contributions.tokenBalance(investor);
-        (postTwoTokenBalance.sub(postOneTokenBalance)).should.be.bignumber.equal(value.mul(rate));
-        postTwoTokenBalance.should.be.bignumber.equal(value.muln(2).mul(rate));
-        const postTwoWeiContribution = await this.contributions.weiContribution(investor);
-        (postTwoWeiContribution.sub(postOneWeiContribution)).should.be.bignumber.equal(value);
-        postTwoWeiContribution.should.be.bignumber.equal(value.muln(2));
-
-        contributorsLength = await this.contributions.getContributorsLength();
-        assert.equal(contributorsLength, 1);
-      });
-
-      it('should fail if less than minimum contribution', async function () {
-        await expectRevert.unspecified(
-          this.crowdsale.sendTransaction({ value: minimumContribution.subn(1), from: investor }),
+      it('should not get investor by index', async function () {
+        await expectRevert(
+          this.crowdsale.getInvestorAddress(0),
+          'EnumerableSet: index out of bounds',
         );
       });
-    });
 
-    describe('low-level purchase', function () {
-      beforeEach(async function () {
-        await time.increaseTo(this.openingTime);
-      });
-
-      it('should add beneficiary to contributions list', async function () {
-        let contributorsLength = await this.contributions.getContributorsLength();
-        assert.equal(contributorsLength, 0);
-
-        const preTokenBalance = await this.contributions.tokenBalance(investor);
-        preTokenBalance.should.be.bignumber.equal(new BN(0));
-        const preWeiContribution = await this.contributions.weiContribution(investor);
-        preWeiContribution.should.be.bignumber.equal(new BN(0));
-
-        await this.crowdsale.buyTokens(investor, { value, from: purchaser });
-
-        const postOneTokenBalance = await this.contributions.tokenBalance(investor);
-        postOneTokenBalance.should.be.bignumber.equal(value.mul(rate));
-        const postOneWeiContribution = await this.contributions.weiContribution(investor);
-        postOneWeiContribution.should.be.bignumber.equal(value);
-
-        await this.crowdsale.buyTokens(investor, { value, from: purchaser });
-
-        const postTwoTokenBalance = await this.contributions.tokenBalance(investor);
-        (postTwoTokenBalance.sub(postOneTokenBalance)).should.be.bignumber.equal(value.mul(rate));
-        postTwoTokenBalance.should.be.bignumber.equal(value.muln(2).mul(rate));
-        const postTwoWeiContribution = await this.contributions.weiContribution(investor);
-        (postTwoWeiContribution.sub(postOneWeiContribution)).should.be.bignumber.equal(value);
-        postTwoWeiContribution.should.be.bignumber.equal(value.muln(2));
-
-        contributorsLength = await this.contributions.getContributorsLength();
-        assert.equal(contributorsLength, 1);
-      });
-
-      it('should fail if less than minimum contribution', async function () {
-        await expectRevert.unspecified(
-          this.crowdsale.buyTokens(investor, { value: minimumContribution.subn(1), from: purchaser }),
-        );
+      it('weiContribution for investor should be zero', async function () {
+        expect(await this.crowdsale.weiContribution(investor)).to.be.bignumber.equal(new BN(0));
       });
     });
 
-    context('check statuses', function () {
-      describe('before start', function () {
-        it('started should be false', async function () {
-          const toTest = await this.crowdsale.started();
-          assert.equal(toTest, false);
+    describe('accepting payments', function () {
+      function checkAfterPaymentBehaviours () {
+        it('should increase investorsNumber', async function () {
+          expect(await this.crowdsale.investorsNumber()).to.be.bignumber.equal(new BN(1));
+
+          await this.crowdsale.sendTransaction({ value, from: purchaser });
+          expect(await this.crowdsale.investorsNumber()).to.be.bignumber.equal(new BN(2));
         });
 
-        it('ended should be false', async function () {
-          const toTest = await this.crowdsale.ended();
-          assert.equal(toTest, false);
+        it('should not increase investorsNumber twice', async function () {
+          await this.crowdsale.sendTransaction({ value, from: investor });
+          expect(await this.crowdsale.investorsNumber()).to.be.bignumber.equal(new BN(1));
         });
 
-        it('capReached should be false', async function () {
-          const toTest = await this.crowdsale.capReached();
-          assert.equal(toTest, false);
+        it('investorExists should be true', async function () {
+          expect(await this.crowdsale.investorExists(investor)).to.be.equal(true);
         });
+
+        it('should get investor by index', async function () {
+          expect(await this.crowdsale.getInvestorAddress(0)).to.be.equal(investor);
+        });
+
+        it('weiContribution for investor should be right set', async function () {
+          expect(await this.crowdsale.weiContribution(investor)).to.be.bignumber.equal(value);
+        });
+      }
+
+      describe('high-level purchase', function () {
+        beforeEach(async function () {
+          await this.crowdsale.sendTransaction({ value, from: investor });
+        });
+
+        checkAfterPaymentBehaviours();
       });
 
-      describe('after start and before end', function () {
+      describe('low-level purchase', function () {
         beforeEach(async function () {
-          await time.increaseTo(this.openingTime);
+          await this.crowdsale.buyTokens(investor, { value, from: purchaser });
         });
 
-        it('started should be true', async function () {
-          const toTest = await this.crowdsale.started();
-          assert.equal(toTest, true);
-        });
-
-        describe('if cap not reached', function () {
-          it('ended should be false', async function () {
-            const toTest = await this.crowdsale.ended();
-            assert.equal(toTest, false);
-          });
-
-          it('capReached should be false', async function () {
-            const toTest = await this.crowdsale.capReached();
-            assert.equal(toTest, false);
-          });
-        });
-
-        describe('if cap reached', function () {
-          beforeEach(async function () {
-            const cap = await this.crowdsale.cap();
-            await this.crowdsale.send(cap);
-          });
-
-          it('ended should be true', async function () {
-            const toTest = await this.crowdsale.ended();
-            assert.equal(toTest, true);
-          });
-
-          it('capReached should be true', async function () {
-            const toTest = await this.crowdsale.capReached();
-            assert.equal(toTest, true);
-          });
-        });
-      });
-
-      describe('after end', function () {
-        beforeEach(async function () {
-          await time.increaseTo(this.afterClosingTime);
-        });
-
-        it('started should be true', async function () {
-          const toTest = await this.crowdsale.started();
-          assert.equal(toTest, true);
-        });
-
-        it('ended should be true', async function () {
-          const toTest = await this.crowdsale.ended();
-          assert.equal(toTest, true);
-        });
+        checkAfterPaymentBehaviours();
       });
     });
   });
