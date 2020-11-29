@@ -1,7 +1,7 @@
 # ICO Maker
 
 [![NPM Package](https://img.shields.io/npm/v/ico-maker.svg?style=flat-square)](https://www.npmjs.org/package/ico-maker)
-[![Build Status](https://travis-ci.com/vittominacori/ico-maker.svg?branch=master)](https://travis-ci.com/vittominacori/ico-maker)
+[![CI](https://github.com/vittominacori/ico-maker/workflows/CI/badge.svg?branch=master)](https://github.com/vittominacori/ico-maker/actions/)
 [![Coverage Status](https://coveralls.io/repos/github/vittominacori/ico-maker/badge.svg?branch=master)](https://coveralls.io/github/vittominacori/ico-maker?branch=master)
 [![MIT licensed](https://img.shields.io/github/license/vittominacori/ico-maker.svg)](https://github.com/vittominacori/ico-maker/blob/master/LICENSE)
 
@@ -46,19 +46,19 @@ npm install
 Open the Truffle console
 
 ```bash
-npm run console
+npm run truffle:console
 ```
 
 #### Compile
 
 ```bash
-npm run compile
+npm run truffle:compile
 ```
 
 #### Test
 
 ```bash
-npm run test
+npm run truffle:test
 ```
 
 ### Usage (using Hardhat)
@@ -79,6 +79,12 @@ npm run hardhat:compile
 
 ```bash
 npm run hardhat:test
+```
+
+#### Code Coverage
+
+```bash
+npm run hardhat:coverage
 ```
 
 ## Linter
